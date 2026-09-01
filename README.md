@@ -205,3 +205,4 @@ See `prisma/schema.prisma` for the full schema.
   environment without live network access to a real Postgres instance or Stripe/Nominatim, so
   the full identity-verification and booking flows haven't been exercised end-to-end — test
   locally before relying on them.
+# RoomsAlike
