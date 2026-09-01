@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RENTER
+  HOST
+  ADMIN
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_PAYMENT
+  ACTIVE
+  INACTIVE
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum IdentityStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model User {
+  id                       String         @id @default(cuid())
+  name                     String
+  email                    String         @unique
+  password                 String
+  role                     Role           @default(RENTER)
+  stripeCustomerId         String?
+  idVerificationStatus     IdentityStatus @default(UNVERIFIED)
+  stripeIdentitySessionId  String?
+  createdAt                DateTime       @default(now())
+
+  listings           Listing[]      @relation("HostListings")
+  bookings           Booking[]      @relation("RenterBookings")
+  reviews            Review[]       @relation("RenterReviews")
+  sentMessages       Message[]      @relation("SentMessages")
+  hostConversations  Conversation[] @relation("HostConversations")
+  guestConversations Conversation[] @relation("RenterConversations")
+}
+
+model Listing {
+  id                     String        @id @default(cuid())
+  hostId                 String
+  host                   User          @relation("HostListings", fields: [hostId], references: [id])
+  title                  String
+  description            String
+  address                String
+  city                   String
+  latitude               Float?
+  longitude              Float?
+  pricePerHour           Float
+  discountThresholdHours Int?
+  discountPercent        Float?
+  photos                 String[]      @default([])
+  maxGuests              Int           @default(2)
+  status                 ListingStatus @default(DRAFT)
+  createdAt              DateTime      @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  bookings      Booking[]
+  conversations Conversation[]
+  reviews       Review[]
+  subscription  Subscription?
+}
+
+// One row per listing's monthly posting-fee subscription.
+model Subscription {
+  id                   String              @id @default(cuid())
+  listingId            String              @unique
+  listing              Listing             @relation(fields: [listingId], references: [id])
+  stripeCustomerId     String
+  stripeSubscriptionId String              @unique
+  status               SubscriptionStatus  @default(INCOMPLETE)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+// No payments happen on the platform for bookings — this just tracks the
+// requested time slot and whether the host approved it. Deposits and the
+// full payment are arranged directly between host and renter off-platform.
+model Booking {
+  id          String        @id @default(cuid())
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id])
+  renterId    String
+  renter      User          @relation("RenterBookings", fields: [renterId], references: [id])
+  startTime   DateTime
+  endTime     DateTime
+  guests      Int           @default(1)
+  totalPrice  Float
+  status      BookingStatus @default(PENDING)
+  // Informational only — the host's own note on the deposit they agreed with
+  // the renter directly. Nothing here is charged or processed by the platform.
+  depositNote String?
+  createdAt   DateTime      @default(now())
+
+  review      Review?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  renterId  String
+  renter    User     @relation("RenterReviews", fields: [renterId], references: [id])
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  listingId String
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  hostId    String
+  host      User      @relation("HostConversations", fields: [hostId], references: [id])
+  renterId  String
+  renter    User      @relation("RenterConversations", fields: [renterId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+
+  @@unique([listingId, renterId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  body           String
+  createdAt      DateTime     @default(now())
+}
