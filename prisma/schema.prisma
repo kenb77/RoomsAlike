@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  RENTER
+  HOST
+  ADMIN
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_PAYMENT
+  PENDING_REVIEW
+  ACTIVE
+  INACTIVE
+}
+
+enum BookingStatus {
+  PENDING
+  APPROVED
+  CANCELLED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum IdentityStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model User {
+  id                       String         @id @default(cuid())
+  name                     String
+  email                    String         @unique
+  password                 String
+  role                     Role           @default(RENTER)
+  stripeCustomerId         String?
+  idVerificationStatus     IdentityStatus @default(UNVERIFIED)
+  stripeIdentitySessionId  String?
+  // Free-text canned message (Venmo/Zelle/PayPal handles etc.) hosts can
+  // insert into chat with one click. Never processed by the platform.
+  paymentInfo              String?
+  createdAt                DateTime       @default(now())
+
+  listings            Listing[]     @relation("HostListings")
+  bookings            Booking[]     @relation("RenterBookings")
+  reviews             Review[]      @relation("RenterReviews")
+  sentMessages        Message[]     @relation("SentMessages")
+  hostConversations   Conversation[] @relation("HostConversations")
+  guestConversations  Conversation[] @relation("RenterConversations")
+  hostReviewsWritten  HostReview[]  @relation("HostReviewAuthor")
+  hostReviewsReceived HostReview[]  @relation("HostReviewSubject")
+}
+
+model Listing {
+  id                     String        @id @default(cuid())
+  hostId                 String
+  host                   User          @relation("HostListings", fields: [hostId], references: [id])
+  title                  String
+  description            String
+  address                String
+  city                   String
+  latitude               Float?
+  longitude              Float?
+  pricePerHour           Float
+  discountThresholdHours Int?
+  discountPercent        Float?
+  photos                 String[]      @default([])
+  amenities              String[]      @default([])
+  cancellationPolicy     String?
+  refundPolicy           String?
+  maxGuests              Int           @default(2)
+  status                 ListingStatus @default(DRAFT)
+  // Set once an admin approves the listing's content/photos. Cleared if the
+  // listing is later rejected or edited enough to need re-review (we keep it
+  // simple: only cleared on explicit rejection, not on every edit).
+  approvedAt             DateTime?
+  rejectionReason        String?
+  // Best-effort page-view counter, incremented on each public listing-detail
+  // view. Not exact analytics, just a rough popularity signal for admin/host.
+  viewCount              Int           @default(0)
+  createdAt              DateTime      @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  bookings      Booking[]
+  conversations Conversation[]
+  reviews       Review[]
+  hostReviews   HostReview[]
+  quickReplies  QuickReply[]
+  subscription  Subscription?
+}
+
+// Canned message snippets a host writes once per listing (door code, wifi
+// password, where to put towels, etc.) and can insert into chat with one
+// click instead of retyping them for every renter.
+model QuickReply {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+}
+
+// One row per listing's monthly posting-fee subscription.
+model Subscription {
+  id                   String              @id @default(cuid())
+  listingId            String              @unique
+  listing              Listing             @relation(fields: [listingId], references: [id])
+  stripeCustomerId     String
+  stripeSubscriptionId String              @unique
+  status               SubscriptionStatus  @default(INCOMPLETE)
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+}
+
+// No payments happen on the platform for bookings — this just tracks the
+// requested time slot and whether the host approved it. Deposits and the
+// full payment are arranged directly between host and renter off-platform.
+model Booking {
+  id          String        @id @default(cuid())
+  listingId   String
+  listing     Listing       @relation(fields: [listingId], references: [id])
+  renterId    String
+  renter      User          @relation("RenterBookings", fields: [renterId], references: [id])
+  startTime   DateTime
+  endTime     DateTime
+  guests      Int           @default(1)
+  totalPrice  Float
+  status      BookingStatus @default(PENDING)
+  // Informational only — the host's own note on the deposit they agreed with
+  // the renter directly. Nothing here is charged or processed by the platform.
+  depositNote String?
+  createdAt   DateTime      @default(now())
+
+  review      Review?
+  hostReview  HostReview?
+}
+
+// The renter's review of the listing/host. Double-blind with HostReview:
+// both are only allowed starting 24h after the booking's end time, and this
+// only becomes visible to others once the matching HostReview also exists.
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  renterId  String
+  renter    User     @relation("RenterReviews", fields: [renterId], references: [id])
+  rating    Int
+  comment   String
+  visible   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// The host's review of the renter for that booking. Mirrors Review — same
+// 24h-after-end gate, same double-blind reveal (both visible flip to true
+// together once the counterpart exists).
+model HostReview {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  hostId    String
+  host      User     @relation("HostReviewAuthor", fields: [hostId], references: [id])
+  renterId  String
+  renter    User     @relation("HostReviewSubject", fields: [renterId], references: [id])
+  rating    Int
+  comment   String
+  visible   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  listingId String
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  hostId    String
+  host      User      @relation("HostConversations", fields: [hostId], references: [id])
+  renterId  String
+  renter    User      @relation("RenterConversations", fields: [renterId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+
+  @@unique([listingId, renterId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  body           String
+  // True for auto-generated notices (booking time changed, cancelled, etc.)
+  // so the UI can style them differently from a regular chat bubble.
+  system         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
