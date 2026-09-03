@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
   if (!STRIPE_CONFIGURED) {
     return NextResponse.json(
-      { error: "ID verification isn't set up yet — check back soon." },
+      { error: "ID verification isn't set up yet. Check back soon." },
       { status: 503 }
     );
   }

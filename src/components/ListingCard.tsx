@@ -4,7 +4,9 @@ type ListingCardProps = {
   id: string;
   title: string;
   city: string;
+  state?: string | null;
   pricePerHour: number;
+  pricePerDay?: number | null;
   photos: string[];
   hostName?: string;
   rating?: number | null;
@@ -16,7 +18,9 @@ export default function ListingCard({
   id,
   title,
   city,
+  state,
   pricePerHour,
+  pricePerDay,
   photos,
   hostName,
   rating,
@@ -50,6 +54,7 @@ export default function ListingCard({
         </div>
         <p className="text-sm text-gray-500">
           {city}
+          {state && `, ${state}`}
           {distanceMiles != null && (
             <span className="text-gray-400"> · {distanceMiles.toFixed(1)} mi away</span>
           )}
@@ -58,6 +63,9 @@ export default function ListingCard({
         <p className="mt-2 font-semibold">
           ${pricePerHour.toFixed(0)}{" "}
           <span className="font-normal text-gray-500">/ hour</span>
+          {pricePerDay != null && (
+            <span className="font-normal text-gray-400 text-sm"> · ${pricePerDay.toFixed(0)}/day</span>
+          )}
         </p>
       </div>
     </Link>

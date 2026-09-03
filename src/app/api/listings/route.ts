@@ -9,7 +9,9 @@ const createSchema = z.object({
   description: z.string().min(10),
   address: z.string().min(3),
   city: z.string().min(2),
+  state: z.string().max(50).nullable().optional(),
   pricePerHour: z.number().positive(),
+  pricePerDay: z.number().positive().nullable().optional(),
   discountThresholdHours: z.number().int().positive().nullable().optional(),
   discountPercent: z.number().min(0).max(100).nullable().optional(),
   maxGuests: z.number().int().positive().default(2),
@@ -47,14 +49,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Only hosts can create listings" }, { status: 403 });
   }
 
-  const host = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (host?.idVerificationStatus !== "VERIFIED") {
-    return NextResponse.json(
-      { error: "Verify your ID before posting a listing" },
-      { status: 403 }
-    );
-  }
-
+  // ID verification is optional (a trust signal, not a requirement) — hosts
+  // can post listings without it.
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) {

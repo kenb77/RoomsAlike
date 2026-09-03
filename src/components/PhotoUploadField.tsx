@@ -42,7 +42,7 @@ export default function PhotoUploadField({ value, onChange, onRemove }: Props) {
         body: file,
       });
 
-      if (!putRes.ok) throw new Error("Upload failed — try again");
+      if (!putRes.ok) throw new Error("Upload failed, try again");
 
       onChange(publicUrl);
     } catch (err) {

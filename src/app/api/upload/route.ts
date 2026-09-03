@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   if (!R2_CONFIGURED) {
     return NextResponse.json(
-      { error: "Photo upload isn't set up yet — paste an image URL instead for now." },
+      { error: "Photo upload isn't set up yet. Paste an image URL instead for now." },
       { status: 503 }
     );
   }

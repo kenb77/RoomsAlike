@@ -113,6 +113,23 @@ export async function PATCH(
       return NextResponse.json({ error: "End time must be after start time" }, { status: 400 });
     }
 
+    const newDurationHours = (newEnd.getTime() - newStart.getTime()) / (1000 * 60 * 60);
+
+    if (booking.bookingType === "HOURLY") {
+      const sameCalendarDay = newStart.toISOString().slice(0, 10) === newEnd.toISOString().slice(0, 10);
+      if (sameCalendarDay && newDurationHours >= 24) {
+        return NextResponse.json(
+          { error: "A same-day booking must be under 24 hours. Pick a date range for multi-day bookings." },
+          { status: 400 }
+        );
+      }
+    } else if (Math.abs(newDurationHours - Math.round(newDurationHours / 24) * 24) > 0.01) {
+      return NextResponse.json(
+        { error: "A daily booking must be in full-day increments." },
+        { status: 400 }
+      );
+    }
+
     const overlap = await prisma.booking.findFirst({
       where: {
         listingId: booking.listingId,
@@ -126,13 +143,15 @@ export async function PATCH(
       return NextResponse.json({ error: "That new time overlaps another booking" }, { status: 409 });
     }
 
-    const hours = (newEnd.getTime() - newStart.getTime()) / (1000 * 60 * 60);
-    const totalPrice = priceForHours(
-      hours,
-      booking.listing.pricePerHour,
-      booking.listing.discountThresholdHours,
-      booking.listing.discountPercent
-    );
+    const totalPrice =
+      booking.bookingType === "DAILY"
+        ? Math.round(Math.round(newDurationHours / 24) * (booking.listing.pricePerDay ?? 0) * 100) / 100
+        : priceForHours(
+            newDurationHours,
+            booking.listing.pricePerHour,
+            booking.listing.discountThresholdHours,
+            booking.listing.discountPercent
+          );
 
     data.startTime = newStart;
     data.endTime = newEnd;

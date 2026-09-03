@@ -16,7 +16,7 @@ const statusStyles: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   PENDING: "Awaiting host approval",
-  APPROVED: "Approved — arrange payment with host",
+  APPROVED: "Approved, arrange payment with host",
   CANCELLED: "Cancelled",
 };
 
@@ -64,7 +64,13 @@ export default async function BookingsPage() {
                   <div>
                     <p className="font-medium">{b.listing.title}</p>
                     <p className="text-sm text-gray-500">
-                      {spansDays ? (
+                      {b.bookingType === "DAILY" ? (
+                        <>
+                          {new Date(b.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {" – "}
+                          {new Date(new Date(b.endTime).getTime() - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </>
+                      ) : spansDays ? (
                         <>
                           {new Date(b.startTime).toLocaleDateString(undefined, { month: "short", day: "numeric" })}{" "}
                           {new Date(b.startTime).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
@@ -83,6 +89,10 @@ export default async function BookingsPage() {
                       {" · "}
                       {(() => {
                         const h = (b.endTime.getTime() - b.startTime.getTime()) / (1000 * 60 * 60);
+                        if (b.bookingType === "DAILY") {
+                          const days = Math.round(h / 24);
+                          return `${days} day${days !== 1 ? "s" : ""}`;
+                        }
                         return `${h} hour${h !== 1 ? "s" : ""}`;
                       })()}
                       {" · ~$"}
@@ -127,7 +137,7 @@ export default async function BookingsPage() {
                   )}
                   {b.hostReview?.visible && (
                     <p className="text-xs text-gray-600">
-                      Your host rated you {b.hostReview.rating}★ — &ldquo;{b.hostReview.comment}&rdquo;
+                      Your host rated you {b.hostReview.rating}★: &ldquo;{b.hostReview.comment}&rdquo;
                     </p>
                   )}
                 </div>

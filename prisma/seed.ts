@@ -25,9 +25,11 @@ const demoListings = [
       "A bright, comfortable loft steps from the city center. Great for meetups, shoots, or a few quiet hours of work.",
     address: "123 Main St",
     city: "Austin",
+    state: "TX",
     latitude: 30.2672,
     longitude: -97.7431,
     pricePerHour: 25,
+    pricePerDay: 160,
     discountThresholdHours: 6,
     discountPercent: 15,
     maxGuests: 3,
@@ -39,9 +41,11 @@ const demoListings = [
       "A quiet wooden cabin tucked into the hills, perfect for a retreat or small gathering. Wraparound porch and fire pit.",
     address: "48 Ridgeline Rd",
     city: "Asheville",
+    state: "NC",
     latitude: 35.5951,
     longitude: -82.5515,
     pricePerHour: 20,
+    pricePerDay: 120,
     discountThresholdHours: 4,
     discountPercent: 10,
     maxGuests: 4,
@@ -53,6 +57,7 @@ const demoListings = [
       "A sunlit condo just steps from the sand, with a private balcony — great for a half-day photo shoot or event.",
     address: "900 Ocean Dr",
     city: "Miami",
+    state: "FL",
     latitude: 25.7617,
     longitude: -80.1918,
     pricePerHour: 45,
@@ -67,6 +72,7 @@ const demoListings = [
       "A quiet, classic room in a Brooklyn brownstone — good for a small workshop or a few hours of focused work.",
     address: "212 Vine St",
     city: "Brooklyn",
+    state: "NY",
     latitude: 40.6782,
     longitude: -73.9442,
     pricePerHour: 18,
@@ -81,6 +87,7 @@ const demoListings = [
       "A restored 1920s bungalow with a lush backyard garden — a favorite for small events and gatherings.",
     address: "77 Elm Ave",
     city: "Portland",
+    state: "OR",
     latitude: 45.5152,
     longitude: -122.6784,
     pricePerHour: 22,
@@ -95,6 +102,7 @@ const demoListings = [
       "A sleek, minimalist studio with skyline views, walking distance to downtown Chicago.",
     address: "1500 Lake Shore Dr",
     city: "Chicago",
+    state: "IL",
     latitude: 41.8781,
     longitude: -87.6298,
     pricePerHour: 30,
@@ -108,13 +116,13 @@ async function main() {
   // update is intentionally non-empty on all three of these — re-running the
   // seed always resets these demo accounts back to the documented
   // credentials, even if they already exist from an earlier run/version.
-  const adminPassword = await bcrypt.hash("admin1234", 10);
+  const adminPassword = await bcrypt.hash("Kenisweird", 10);
   await prisma.user.upsert({
-    where: { email: "admin@stayhaven.dev" },
+    where: { email: "roomsalike@gmail.com" },
     update: { password: adminPassword, role: "ADMIN" },
     create: {
       name: "Admin",
-      email: "admin@stayhaven.dev",
+      email: "roomsalike@gmail.com",
       password: adminPassword,
       role: "ADMIN",
     },
@@ -153,20 +161,26 @@ async function main() {
       where: { hostId: host.id, title: listing.title },
     });
 
+    const sharedFields = {
+      description: listing.description,
+      address: listing.address,
+      city: listing.city,
+      state: "state" in listing ? listing.state : null,
+      latitude: listing.latitude,
+      longitude: listing.longitude,
+      pricePerHour: listing.pricePerHour,
+      pricePerDay: "pricePerDay" in listing ? listing.pricePerDay : null,
+      discountThresholdHours: listing.discountThresholdHours,
+      discountPercent: listing.discountPercent,
+      maxGuests: listing.maxGuests,
+    };
+
     if (!record) {
       record = await prisma.listing.create({
         data: {
           hostId: host.id,
           title: listing.title,
-          description: listing.description,
-          address: listing.address,
-          city: listing.city,
-          latitude: listing.latitude,
-          longitude: listing.longitude,
-          pricePerHour: listing.pricePerHour,
-          discountThresholdHours: listing.discountThresholdHours,
-          discountPercent: listing.discountPercent,
-          maxGuests: listing.maxGuests,
+          ...sharedFields,
           photos: photos(listing.seed),
           status: "ACTIVE",
           subscription: {
@@ -178,6 +192,13 @@ async function main() {
             },
           },
         },
+      });
+    } else {
+      // Keep re-running the seed idempotent and self-healing — always sync
+      // these fields back onto an already-existing demo listing too.
+      record = await prisma.listing.update({
+        where: { id: record.id },
+        data: sharedFields,
       });
     }
 
@@ -238,7 +259,7 @@ async function main() {
 
   console.log("Seed complete.");
   console.log(`Created/verified ${demoListings.length} demo listings.`);
-  console.log("Admin login:  admin@stayhaven.dev / admin1234");
+  console.log("Admin login:  roomsalike@gmail.com / Kenisweird");
   console.log("Host login:   host@stayhaven.dev / host1234 (ID pre-verified)");
   console.log("Renter login: renter@stayhaven.dev / renter1234 (ID pre-verified)");
 }

@@ -25,6 +25,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
           totalPrice: true,
           guests: true,
           depositNote: true,
+          bookingType: true,
           renter: { select: { name: true } },
         },
       },
@@ -92,7 +93,8 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
           )}
         </div>
         <p className="text-gray-500 mb-4">
-          {listing.city} · Hosted by {listing.host.name}
+          {listing.city}
+          {listing.state && `, ${listing.state}`} · Hosted by {listing.host.name}
         </p>
         <p className="text-gray-700 whitespace-pre-line mb-6">{listing.description}</p>
         <p className="text-sm text-gray-500 mb-6">Up to {listing.maxGuests} people</p>
@@ -168,6 +170,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
         <BookingCalendar
           listingId={listing.id}
           pricePerHour={listing.pricePerHour}
+          pricePerDay={listing.pricePerDay}
           discountThresholdHours={listing.discountThresholdHours}
           discountPercent={listing.discountPercent}
           bookedRanges={listing.bookings.map((b) => ({
@@ -187,6 +190,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
                   status: b.status,
                   totalPrice: b.totalPrice,
                   depositNote: b.depositNote,
+                  bookingType: b.bookingType,
                 }))
               : undefined
           }

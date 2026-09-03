@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 
-export default function ManageBillingButton() {
+export default function ManageBillingButton({ returnPath }: { returnPath?: "/account" | "/host/dashboard" }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleClick() {
     setLoading(true);
     setError("");
-    const res = await fetch("/api/stripe/billing-portal", { method: "POST" });
+    const res = await fetch("/api/stripe/billing-portal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ returnPath }),
+    });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       setError(data.error ?? "Could not open billing portal");

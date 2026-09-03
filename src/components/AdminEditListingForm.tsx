@@ -12,7 +12,9 @@ type Props = {
     description: string;
     address: string;
     city: string;
+    state: string | null;
     pricePerHour: number;
+    pricePerDay: number | null;
     maxGuests: number;
     discountThresholdHours: number | null;
     discountPercent: number | null;
@@ -23,7 +25,7 @@ type Props = {
   };
 };
 
-// Admin-only version of the listing form — same fields as what a host fills
+// Admin-only version of the listing form. Same fields as what a host fills
 // in when creating a listing, but pre-filled and saved via the admin PATCH
 // endpoint so staff can fix up content (typos, bad photos, etc.) directly.
 export default function AdminEditListingForm({ listingId, initial }: Props) {
@@ -33,7 +35,9 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
     description: initial.description,
     address: initial.address,
     city: initial.city,
+    state: initial.state ?? "",
     pricePerHour: String(initial.pricePerHour),
+    pricePerDay: initial.pricePerDay?.toString() ?? "",
     maxGuests: String(initial.maxGuests),
     discountThresholdHours: initial.discountThresholdHours?.toString() ?? "",
     discountPercent: initial.discountPercent?.toString() ?? "",
@@ -84,7 +88,9 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
         description: form.description,
         address: form.address,
         city: form.city,
+        state: form.state.trim() || null,
         pricePerHour: Number(form.pricePerHour),
+        pricePerDay: form.pricePerDay ? Number(form.pricePerDay) : null,
         maxGuests: Number(form.maxGuests),
         discountThresholdHours: form.discountThresholdHours
           ? Number(form.discountThresholdHours)
@@ -130,7 +136,7 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
           onChange={(e) => update("description", e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm mb-1">City</label>
           <input
@@ -138,6 +144,15 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
             className="w-full border rounded-lg px-3 py-2"
             value={form.city}
             onChange={(e) => update("city", e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">State</label>
+          <input
+            placeholder="e.g. TX"
+            className="w-full border rounded-lg px-3 py-2"
+            value={form.state}
+            onChange={(e) => update("state", e.target.value)}
           />
         </div>
         <div>
@@ -163,16 +178,27 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
           />
         </div>
         <div>
-          <label className="block text-sm mb-1">Max people</label>
+          <label className="block text-sm mb-1">Price / day (optional, $)</label>
           <input
             type="number"
             min={1}
-            required
+            placeholder="Leave blank to only offer hourly"
             className="w-full border rounded-lg px-3 py-2"
-            value={form.maxGuests}
-            onChange={(e) => update("maxGuests", e.target.value)}
+            value={form.pricePerDay}
+            onChange={(e) => update("pricePerDay", e.target.value)}
           />
         </div>
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Max people</label>
+        <input
+          type="number"
+          min={1}
+          required
+          className="w-full border rounded-lg px-3 py-2"
+          value={form.maxGuests}
+          onChange={(e) => update("maxGuests", e.target.value)}
+        />
       </div>
 
       <div className="border-t pt-4">

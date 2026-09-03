@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LISTING_POST_FEE_CENTS } from "@/lib/stripe";
 import AdminListingReviewActions from "@/components/AdminListingReviewActions";
+import AdminReviewModerationActions from "@/components/AdminReviewModerationActions";
+import AdminDeletionRequestActions from "@/components/AdminDeletionRequestActions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +30,8 @@ export default async function AdminPage() {
     reviews,
     verifiedUsers,
     totalViews,
+    pendingReviewBookings,
+    pendingDeletions,
   ] = await Promise.all([
     prisma.listing.findMany({
       include: { host: { select: { name: true, email: true } }, subscription: true },
@@ -44,6 +48,25 @@ export default async function AdminPage() {
     prisma.review.count(),
     prisma.user.count({ where: { idVerificationStatus: "VERIFIED" } }),
     prisma.listing.aggregate({ _sum: { viewCount: true } }),
+    // Bookings where both sides have left a review, neither has been denied,
+    // and it's not visible yet — these are waiting on admin approval.
+    prisma.booking.findMany({
+      where: {
+        review: { is: { denied: false, visible: false } },
+        hostReview: { is: { denied: false, visible: false } },
+      },
+      include: {
+        listing: { select: { title: true } },
+        renter: { select: { name: true, email: true } },
+        review: true,
+        hostReview: true,
+      },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.user.findMany({
+      where: { deletionRequested: true },
+      orderBy: { deletionRequestedAt: "asc" },
+    }),
   ]);
 
   const activeSubscriptions =
@@ -146,6 +169,59 @@ export default async function AdminPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </>
+      )}
+
+      {pendingReviewBookings.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold mb-3">
+            Reviews awaiting approval ({pendingReviewBookings.length})
+          </h2>
+          <div className="border rounded-xl bg-white overflow-hidden mb-8 divide-y">
+            {pendingReviewBookings.map((b) => (
+              <div key={b.id} className="p-4 grid sm:grid-cols-3 gap-4">
+                <div className="text-sm text-gray-500">
+                  <p className="font-medium text-gray-900">{b.listing.title}</p>
+                  <p>Renter: {b.renter.name} ({b.renter.email})</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-xs text-gray-400 uppercase">Renter&apos;s review of listing</p>
+                  <p>{"★".repeat(b.review!.rating)}{"☆".repeat(5 - b.review!.rating)}</p>
+                  <p className="text-gray-600">{b.review!.comment}</p>
+                </div>
+                <div className="text-sm">
+                  <p className="text-xs text-gray-400 uppercase">Host&apos;s review of renter</p>
+                  <p>{"★".repeat(b.hostReview!.rating)}{"☆".repeat(5 - b.hostReview!.rating)}</p>
+                  <p className="text-gray-600">{b.hostReview!.comment}</p>
+                </div>
+                <div className="sm:col-span-3">
+                  <AdminReviewModerationActions bookingId={b.id} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {pendingDeletions.length > 0 && (
+        <>
+          <h2 className="text-lg font-semibold mb-3">
+            Account deletion requests ({pendingDeletions.length})
+          </h2>
+          <div className="border rounded-xl bg-white overflow-hidden mb-8 divide-y">
+            {pendingDeletions.map((u) => (
+              <div key={u.id} className="p-4 flex items-start justify-between gap-4">
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900">{u.name} ({u.email})</p>
+                  <p className="text-gray-500">
+                    Requested {u.deletionRequestedAt ? new Date(u.deletionRequestedAt).toLocaleString() : ""}
+                  </p>
+                  {u.deletionReason && <p className="text-gray-600 mt-1">Reason: {u.deletionReason}</p>}
+                </div>
+                <AdminDeletionRequestActions userId={u.id} />
+              </div>
+            ))}
           </div>
         </>
       )}

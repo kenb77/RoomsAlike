@@ -8,13 +8,13 @@ const siteUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "RoomsAlike — Rent your place, book a stay",
-    template: "%s — RoomsAlike",
+    default: "RoomsAlike: Rent your place, book a stay",
+    template: "%s: RoomsAlike",
   },
   description:
-    "Browse hourly and multi-day space rentals near you, or list your own space and get paid — no platform fees on bookings, hosts pay a simple monthly listing fee.",
+    "Browse hourly and multi-day space rentals near you, or list your own space and get paid. No platform fees on bookings, hosts pay a simple monthly listing fee.",
   openGraph: {
-    title: "RoomsAlike — Rent your place, book a stay",
+    title: "RoomsAlike: Rent your place, book a stay",
     description:
       "Browse hourly and multi-day space rentals near you, or list your own space and get paid.",
     url: siteUrl,
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "RoomsAlike — Rent your place, book a stay",
+    title: "RoomsAlike: Rent your place, book a stay",
     description:
       "Browse hourly and multi-day space rentals near you, or list your own space and get paid.",
     images: ["/icon.png"],

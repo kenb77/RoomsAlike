@@ -40,7 +40,7 @@ export default async function AdminConversationPage({
         Host: {conversation.host.name} ({conversation.host.email}) &middot; Renter:{" "}
         {conversation.renter.name} ({conversation.renter.email})
       </p>
-      <p className="text-xs text-gray-400 mb-4">Read-only admin view — you can&apos;t post here.</p>
+      <p className="text-xs text-gray-400 mb-4">Read-only admin view. You can&apos;t post here.</p>
 
       <div className="border rounded-xl bg-white p-4 space-y-3">
         {conversation.messages.map((m) => {

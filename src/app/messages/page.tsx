@@ -42,7 +42,7 @@ export default async function MessagesInboxPage() {
                   <p className="font-medium">{c.listing.title}</p>
                   <p className="text-sm text-gray-500">
                     with {otherParty.name}
-                    {lastMessage ? ` — ${lastMessage.body.slice(0, 50)}` : ""}
+                    {lastMessage ? `: ${lastMessage.body.slice(0, 50)}` : ""}
                   </p>
                 </div>
               </Link>

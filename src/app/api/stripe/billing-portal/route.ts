@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
   if (!STRIPE_CONFIGURED) {
     return NextResponse.json(
-      { error: "Billing isn't set up yet — check back soon." },
+      { error: "Billing isn't set up yet. Check back soon." },
       { status: 503 }
     );
   }
@@ -20,10 +20,12 @@ export async function POST(req: Request) {
   }
 
   const origin = req.headers.get("origin") ?? process.env.NEXTAUTH_URL;
+  const body = await req.json().catch(() => ({}));
+  const returnPath = body?.returnPath === "/account" ? "/account" : "/host/dashboard";
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
-    return_url: `${origin}/host/dashboard`,
+    return_url: `${origin}${returnPath}`,
   });
 
   return NextResponse.json({ url: portalSession.url });

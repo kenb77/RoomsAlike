@@ -4,26 +4,41 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import TurnstileWidget from "@/components/TurnstileWidget";
+
+const TURNSTILE_ENABLED = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (TURNSTILE_ENABLED && !turnstileToken) {
+      setError("Please complete the verification check");
+      return;
+    }
+
     setLoading(true);
     const res = await signIn("credentials", {
       email,
       password,
+      turnstileToken: turnstileToken ?? "",
       redirect: false,
     });
     setLoading(false);
     if (res?.error) {
-      setError("Invalid email or password");
+      setError(
+        res.error === "account-suspended"
+          ? "This account is deactivated pending a deletion request. Contact us if this wasn't you."
+          : "Invalid email or password"
+      );
       return;
     }
     router.push("/");
@@ -54,6 +69,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
+        <TurnstileWidget onVerify={setTurnstileToken} />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
           type="submit"

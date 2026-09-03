@@ -8,19 +8,19 @@ export const dynamic = "force-dynamic";
 const statusCopy: Record<string, { title: string; body: string }> = {
   UNVERIFIED: {
     title: "Verify your ID",
-    body: "Hosts need a verified ID to post a listing, and renters need one to request a booking. Verification is handled securely by Stripe — we never see or store your ID.",
+    body: "Verification is optional, but it shows other hosts and renters you're trustworthy. It's handled securely by Stripe, and we never see or store your ID.",
   },
   PENDING: {
     title: "Verification in progress",
-    body: "We've received your submission and are waiting on the result. This usually finishes within a few minutes — check back shortly.",
+    body: "We've received your submission and are waiting on the result. This usually finishes within a few minutes, so check back shortly.",
   },
   VERIFIED: {
     title: "You're verified",
-    body: "Your ID has been verified. You can post listings and request bookings.",
+    body: "Your ID has been verified and shows on your profile as a trust signal.",
   },
   FAILED: {
     title: "Verification didn't go through",
-    body: "Something didn't check out — an expired document, a mismatch, or an unsupported document type. You can try again below.",
+    body: "Something didn't check out: an expired document, a mismatch, or an unsupported document type. You can try again below.",
   },
 };
 
@@ -41,7 +41,7 @@ export default async function VerifyPage({
     <div className="max-w-md mx-auto px-6 py-16 text-center">
       {searchParams.complete && user.idVerificationStatus === "PENDING" && (
         <p className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-          Submission received &mdash; we&apos;re waiting on Stripe to finish processing it.
+          Submission received. We&apos;re waiting on Stripe to finish processing it.
         </p>
       )}
 

@@ -12,7 +12,9 @@ export default function NewListingForm() {
     description: "",
     address: "",
     city: "",
+    state: "",
     pricePerHour: "",
+    pricePerDay: "",
     maxGuests: "2",
     discountThresholdHours: "",
     discountPercent: "",
@@ -57,7 +59,9 @@ export default function NewListingForm() {
         description: form.description,
         address: form.address,
         city: form.city,
+        state: form.state.trim() || null,
         pricePerHour: Number(form.pricePerHour),
+        pricePerDay: form.pricePerDay ? Number(form.pricePerDay) : null,
         maxGuests: Number(form.maxGuests),
         discountThresholdHours: form.discountThresholdHours
           ? Number(form.discountThresholdHours)
@@ -103,7 +107,7 @@ export default function NewListingForm() {
           onChange={(e) => update("description", e.target.value)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <label className="block text-sm mb-1">City</label>
           <input
@@ -111,6 +115,15 @@ export default function NewListingForm() {
             className="w-full border rounded-lg px-3 py-2"
             value={form.city}
             onChange={(e) => update("city", e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">State</label>
+          <input
+            placeholder="e.g. TX"
+            className="w-full border rounded-lg px-3 py-2"
+            value={form.state}
+            onChange={(e) => update("state", e.target.value)}
           />
         </div>
         <div>
@@ -136,22 +149,33 @@ export default function NewListingForm() {
           />
         </div>
         <div>
-          <label className="block text-sm mb-1">Max people</label>
+          <label className="block text-sm mb-1">Price / day (optional, $)</label>
           <input
             type="number"
             min={1}
-            required
+            placeholder="Leave blank to only offer hourly"
             className="w-full border rounded-lg px-3 py-2"
-            value={form.maxGuests}
-            onChange={(e) => update("maxGuests", e.target.value)}
+            value={form.pricePerDay}
+            onChange={(e) => update("pricePerDay", e.target.value)}
           />
         </div>
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Max people</label>
+        <input
+          type="number"
+          min={1}
+          required
+          className="w-full border rounded-lg px-3 py-2"
+          value={form.maxGuests}
+          onChange={(e) => update("maxGuests", e.target.value)}
+        />
       </div>
 
       <div className="border-t pt-4">
         <p className="text-sm font-medium mb-1">Multi-hour discount (optional)</p>
         <p className="text-xs text-gray-500 mb-2">
-          Offer a discount once a booking reaches a certain number of hours — e.g. 10% off for
+          Offer a discount once a booking reaches a certain number of hours, e.g. 10% off for
           bookings of 6+ hours.
         </p>
         <div className="grid grid-cols-2 gap-4">

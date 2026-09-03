@@ -146,7 +146,7 @@ export default async function HomePage({
 
       {location?.trim() && !searchOrigin && (
         <p className="text-sm text-amber-600 mb-4 text-center">
-          Couldn&apos;t pinpoint &quot;{location}&quot; on the map — showing city-name matches instead.
+          Couldn&apos;t pinpoint &quot;{location}&quot; on the map. Showing city-name matches instead.
         </p>
       )}
 
@@ -160,7 +160,9 @@ export default async function HomePage({
               id={listing.id}
               title={listing.title}
               city={listing.city}
+              state={listing.state}
               pricePerHour={listing.pricePerHour}
+              pricePerDay={listing.pricePerDay}
               photos={listing.photos}
               hostName={listing.host.name}
               rating={avgRating(listing.reviews)}

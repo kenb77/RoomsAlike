@@ -55,7 +55,7 @@ export function bookingStatusEmail(opts: {
 }) {
   const verb = opts.status === "APPROVED" ? "approved" : "cancelled";
   return {
-    subject: `Your booking request was ${verb} — ${opts.listingTitle}`,
+    subject: `Your booking request was ${verb}: ${opts.listingTitle}`,
     html: `
       <p>Hi ${opts.renterName},</p>
       <p>Your booking request for <strong>${opts.listingTitle}</strong> was <strong>${verb}</strong>.</p>
@@ -76,7 +76,7 @@ export function newMessageEmail(opts: {
   conversationUrl: string;
 }) {
   return {
-    subject: `New message from ${opts.senderName} — ${opts.listingTitle}`,
+    subject: `New message from ${opts.senderName}: ${opts.listingTitle}`,
     html: `
       <p>Hi ${opts.recipientName},</p>
       <p><strong>${opts.senderName}</strong> sent you a message about <strong>${opts.listingTitle}</strong>.</p>
@@ -90,10 +90,44 @@ export function newListingPendingReviewEmail(opts: {
   adminUrl: string;
 }) {
   return {
-    subject: `New listing awaiting review — ${opts.listingTitle}`,
+    subject: `New listing awaiting review: ${opts.listingTitle}`,
     html: `
       <p><strong>${opts.listingTitle}</strong> just went live on payment and is waiting on admin approval before it's visible to renters.</p>
       <p><a href="${opts.adminUrl}">Review it</a></p>
+    `,
+  };
+}
+
+export function deletionRequestedEmail(opts: {
+  userName: string;
+  userEmail: string;
+  reason: string | null;
+  adminUrl: string;
+}) {
+  return {
+    subject: `Account deletion request: ${opts.userEmail}`,
+    html: `
+      <p><strong>${opts.userName}</strong> (${opts.userEmail}) has requested to delete their account.</p>
+      ${opts.reason ? `<p>Reason given: ${opts.reason}</p>` : "<p>No reason given.</p>"}
+      <p>Their account is suspended until you approve or deny this request.</p>
+      <p><a href="${opts.adminUrl}">Review it</a></p>
+    `,
+  };
+}
+
+export function deletionDeniedEmail(opts: {
+  userName: string;
+  reason: string | null;
+  loginUrl: string;
+}) {
+  return {
+    subject: "Your account deletion request was denied",
+    html: `
+      <p>Hi ${opts.userName},</p>
+      <p>Your request to delete your RoomsAlike account was denied and your account has been reactivated.</p>
+      ${opts.reason ? `<p>Reason: ${opts.reason}</p>` : ""}
+      <p>You're welcome to log back in, or request deletion again if you'd still like to.</p>
+      <p><a href="${opts.loginUrl}">Log in</a></p>
     `,
   };
 }
@@ -107,12 +141,12 @@ export function listingReviewedEmail(opts: {
 }) {
   return {
     subject: opts.approved
-      ? `Your listing is live — ${opts.listingTitle}`
-      : `Your listing needs changes — ${opts.listingTitle}`,
+      ? `Your listing is live: ${opts.listingTitle}`
+      : `Your listing needs changes: ${opts.listingTitle}`,
     html: opts.approved
       ? `
         <p>Hi ${opts.hostName},</p>
-        <p>Good news — <strong>${opts.listingTitle}</strong> has been approved and is now live for renters to book.</p>
+        <p>Good news. <strong>${opts.listingTitle}</strong> has been approved and is now live for renters to book.</p>
         <p><a href="${opts.listingUrl}">View your listing</a></p>
       `
       : `

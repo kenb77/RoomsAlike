@@ -27,7 +27,7 @@ const bookingStatusStyles: Record<string, string> = {
 
 const subscriptionStatusLabel: Record<string, string> = {
   ACTIVE: "Billing active",
-  PAST_DUE: "Payment failed — update your card",
+  PAST_DUE: "Payment failed, update your card",
   CANCELED: "Subscription canceled",
   INCOMPLETE: "Payment pending",
 };
@@ -64,12 +64,12 @@ export default async function HostDashboardPage() {
       </div>
 
       {user?.idVerificationStatus !== "VERIFIED" && (
-        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
-          Your ID isn&apos;t verified yet —{" "}
+        <p className="text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+          ID verification is optional, but{" "}
           <Link href="/verify" className="underline font-medium">
-            verify it
+            verifying
           </Link>{" "}
-          before posting a listing.
+          shows renters you&apos;re a trusted host.
         </p>
       )}
 
@@ -87,7 +87,8 @@ export default async function HostDashboardPage() {
                 <div>
                   <p className="font-medium">{listing.title}</p>
                   <p className="text-sm text-gray-500">
-                    {listing.city} · ${listing.pricePerHour}/hour · {listing.viewCount} view
+                    {listing.city}
+                    {listing.state && `, ${listing.state}`} · ${listing.pricePerHour}/hour · {listing.viewCount} view
                     {listing.viewCount === 1 ? "" : "s"}
                   </p>
                   {listing.subscription && (
@@ -176,7 +177,7 @@ export default async function HostDashboardPage() {
                         )}
                         {b.review?.visible && (
                           <p className="text-xs text-gray-600 mt-1">
-                            {b.renter.name} rated you {b.review.rating}★ — &ldquo;{b.review.comment}&rdquo;
+                            {b.renter.name} rated you {b.review.rating}★: &ldquo;{b.review.comment}&rdquo;
                           </p>
                         )}
                       </div>
@@ -194,6 +195,7 @@ export default async function HostDashboardPage() {
                     <BookingCalendar
                       listingId={listing.id}
                       pricePerHour={listing.pricePerHour}
+                      pricePerDay={listing.pricePerDay}
                       discountThresholdHours={listing.discountThresholdHours}
                       discountPercent={listing.discountPercent}
                       bookedRanges={[]}
@@ -211,6 +213,7 @@ export default async function HostDashboardPage() {
                           status: b.status,
                           totalPrice: b.totalPrice,
                           depositNote: b.depositNote,
+                          bookingType: b.bookingType,
                         }))}
                     />
                   </div>

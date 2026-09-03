@@ -46,29 +46,18 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const bothSubmitted = !!booking.review;
-
-  const [hostReview] = await prisma.$transaction([
-    prisma.hostReview.create({
-      data: {
-        bookingId: booking.id,
-        listingId: booking.listingId,
-        hostId: session.user.id,
-        renterId: booking.renterId,
-        rating: parsed.data.rating,
-        comment: parsed.data.comment,
-        visible: bothSubmitted,
-      },
-    }),
-    ...(bothSubmitted
-      ? [
-          prisma.review.update({
-            where: { bookingId: booking.id },
-            data: { visible: true },
-          }),
-        ]
-      : []),
-  ]);
+  // Once both sides have submitted, it's queued for admin approval below —
+  // visible only flips to true once an admin approves it, not automatically.
+  const hostReview = await prisma.hostReview.create({
+    data: {
+      bookingId: booking.id,
+      listingId: booking.listingId,
+      hostId: session.user.id,
+      renterId: booking.renterId,
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
+    },
+  });
 
   return NextResponse.json(hostReview);
 }

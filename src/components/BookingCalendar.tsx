@@ -16,11 +16,13 @@ type HostBooking = {
   status: "PENDING" | "APPROVED" | "CANCELLED";
   totalPrice: number;
   depositNote: string | null;
+  bookingType: "HOURLY" | "DAILY";
 };
 
 type Props = {
   listingId: string;
   pricePerHour: number;
+  pricePerDay: number | null;
   discountThresholdHours: number | null;
   discountPercent: number | null;
   bookedRanges: BookedRange[];
@@ -59,6 +61,16 @@ function addMonths(d: Date, n: number) {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
+function addDays(d: Date, n: number) {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+
+function daysBetweenInclusive(a: Date, b: Date) {
+  return Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
+
 function priceForHours(
   hours: number,
   pricePerHour: number,
@@ -77,9 +89,69 @@ function formatDateTime(d: Date) {
     ", " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
+const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1);
+
+// Bookings are on-the-hour only, no minutes.
+function to24(hour12: number, ampm: "AM" | "PM") {
+  let h = hour12 % 12;
+  if (ampm === "PM") h += 12;
+  return `${String(h).padStart(2, "0")}:00`;
+}
+
+function from24(value: string) {
+  const h = parseInt(value.split(":")[0], 10) || 0;
+  const ampm: "AM" | "PM" = h >= 12 ? "PM" : "AM";
+  let hour12 = h % 12;
+  if (hour12 === 0) hour12 = 12;
+  return { hour12, ampm };
+}
+
+// Plain <select> dropdowns instead of a native <input type="time"> — the
+// native time picker is unreliable to interact with on a lot of phones and
+// browsers, dropdowns work the same everywhere. Hour + AM/PM only, no
+// minutes, since bookings are always on the hour.
+function TimeSelect({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const { hour12, ampm } = from24(value);
+  return (
+    <div>
+      <label className="block text-xs text-gray-500 mb-1">{label}</label>
+      <div className="flex gap-1.5">
+        <select
+          value={hour12}
+          onChange={(e) => onChange(to24(Number(e.target.value), ampm))}
+          className="flex-1 min-w-0 border rounded-lg px-2 py-1.5 text-sm"
+        >
+          {HOURS_12.map((h) => (
+            <option key={h} value={h}>
+              {h}:00
+            </option>
+          ))}
+        </select>
+        <select
+          value={ampm}
+          onChange={(e) => onChange(to24(hour12, e.target.value as "AM" | "PM"))}
+          className="flex-1 min-w-0 border rounded-lg px-2 py-1.5 text-sm"
+        >
+          <option value="AM">AM</option>
+          <option value="PM">PM</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
 export default function BookingCalendar({
   listingId,
   pricePerHour,
+  pricePerDay,
   discountThresholdHours,
   discountPercent,
   bookedRanges,
@@ -95,9 +167,14 @@ export default function BookingCalendar({
   const today = useMemo(() => toDateOnly(new Date()), []);
   const [monthCursor, setMonthCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
 
-  // Renter flow: rangeStart/rangeEnd are both dates (day granularity). A
+  // Renter flow: HOURLY books a single day by the hour (under 24h). DAILY
+  // books one or more full calendar days at the listing's day rate.
+  const [mode, setMode] = useState<"HOURLY" | "DAILY">("HOURLY");
+
+  // rangeStart/rangeEnd are both dates (day granularity). In DAILY mode, a
   // single click selects a one-day booking; clicking a later date extends
-  // it into a multi-day range.
+  // it into a multi-day range. In HOURLY mode only a single day is ever
+  // selected at a time.
   const [rangeStart, setRangeStart] = useState<Date | null>(null);
   const [rangeEnd, setRangeEnd] = useState<Date | null>(null);
   const [startTime, setStartTime] = useState("09:00");
@@ -105,6 +182,15 @@ export default function BookingCalendar({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  function switchMode(next: "HOURLY" | "DAILY") {
+    if (next === mode) return;
+    setMode(next);
+    setRangeStart(null);
+    setRangeEnd(null);
+    setError("");
+    setSuccess(false);
+  }
 
   // Host flow: a single selected day to inspect.
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -157,20 +243,32 @@ export default function BookingCalendar({
     setError("");
     setSuccess(false);
 
-    if (!rangeStart || (rangeStart && rangeEnd)) {
-      // Starting a fresh selection.
+    // Both hourly and daily bookings support a multi-day range: click a
+    // date, then click a later date to extend the selection.
+    if (!rangeStart) {
       setRangeStart(day);
       setRangeEnd(day);
       return;
     }
 
-    // rangeStart is set, rangeEnd matches it (still single-day) — extend or restart.
-    if (day.getTime() >= rangeStart.getTime()) {
-      setRangeEnd(day);
-    } else {
-      setRangeStart(day);
-      setRangeEnd(day);
+    const singleDaySelected = rangeEnd && isSameDay(rangeStart, rangeEnd);
+
+    if (singleDaySelected && !isSameDay(day, rangeStart)) {
+      // A later click extends the single day into a range; an earlier click
+      // restarts the selection from there.
+      if (day.getTime() > rangeStart.getTime()) {
+        setRangeEnd(day);
+      } else {
+        setRangeStart(day);
+        setRangeEnd(day);
+      }
+      return;
     }
+
+    // A range is already selected (or the same day was clicked again) —
+    // start a fresh selection from this day.
+    setRangeStart(day);
+    setRangeEnd(day);
   }
 
   function resetToSingleDay() {
@@ -181,29 +279,43 @@ export default function BookingCalendar({
 
   const startDateTime = useMemo(() => {
     if (!rangeStart) return null;
+    if (mode === "DAILY") return startOfDay(rangeStart);
     const [h, m] = startTime.split(":").map(Number);
     const d = new Date(rangeStart);
     d.setHours(h, m, 0, 0);
     return d;
-  }, [rangeStart, startTime]);
+  }, [rangeStart, startTime, mode]);
 
   const endDateTime = useMemo(() => {
     const end = rangeEnd ?? rangeStart;
     if (!end) return null;
+    if (mode === "DAILY") return startOfDay(addDays(end, 1));
     const [h, m] = endTime.split(":").map(Number);
     const d = new Date(end);
     d.setHours(h, m, 0, 0);
     return d;
-  }, [rangeStart, rangeEnd, endTime]);
+  }, [rangeStart, rangeEnd, endTime, mode]);
 
   const hours =
-    startDateTime && endDateTime && endDateTime > startDateTime
+    mode === "HOURLY" && startDateTime && endDateTime && endDateTime > startDateTime
       ? (endDateTime.getTime() - startDateTime.getTime()) / (1000 * 60 * 60)
       : 0;
 
-  const total = hours > 0 ? priceForHours(hours, pricePerHour, discountThresholdHours, discountPercent) : 0;
+  const numDays = mode === "DAILY" && rangeStart && rangeEnd ? daysBetweenInclusive(rangeStart, rangeEnd) : 0;
+
+  const total =
+    mode === "DAILY"
+      ? numDays > 0 && pricePerDay != null
+        ? Math.round(numDays * pricePerDay * 100) / 100
+        : 0
+      : hours > 0
+      ? priceForHours(hours, pricePerHour, discountThresholdHours, discountPercent)
+      : 0;
   const discountActive =
-    discountThresholdHours != null && discountPercent != null && hours >= discountThresholdHours;
+    mode === "HOURLY" &&
+    discountThresholdHours != null &&
+    discountPercent != null &&
+    hours >= discountThresholdHours;
 
   function renderMonth(monthDate: Date) {
     const year = monthDate.getFullYear();
@@ -274,8 +386,14 @@ export default function BookingCalendar({
   }
 
   async function handleBook() {
-    if (!startDateTime || !endDateTime || hours <= 0) {
-      setError("Pick dates and a valid time range");
+    if (!isLoggedIn) {
+      router.push("/login");
+      return;
+    }
+
+    const valid = mode === "HOURLY" ? hours > 0 : numDays > 0;
+    if (!startDateTime || !endDateTime || !valid) {
+      setError(mode === "HOURLY" ? "Pick a date and a valid time range" : "Pick at least one day");
       return;
     }
 
@@ -289,6 +407,7 @@ export default function BookingCalendar({
         listingId,
         startTime: startDateTime.toISOString(),
         endTime: endDateTime.toISOString(),
+        bookingType: mode,
       }),
     });
 
@@ -309,7 +428,7 @@ export default function BookingCalendar({
     return (
       <div className={"border rounded-xl p-6 bg-white" + stickyClass}>
         <p className="text-sm text-gray-500 mb-4">
-          This is your listing — booked dates and requests are shown below. Renters see these same
+          This is your listing. Booked dates and requests are shown below. Renters see these same
           dates as unavailable for those hours.
         </p>
 
@@ -357,43 +476,47 @@ export default function BookingCalendar({
     );
   }
 
-  if (!isLoggedIn) {
-    return (
-      <div className="border rounded-xl p-6 bg-white text-center">
-        <p className="text-sm text-gray-500 mb-3">Log in to request a booking.</p>
-        <Link
-          href="/login"
-          className="inline-block rounded-full bg-rose-600 text-white px-5 py-2 text-sm font-medium hover:bg-rose-700"
-        >
-          Log in
-        </Link>
-      </div>
-    );
-  }
-
-  if (!isIdVerified) {
-    return (
-      <div className="border rounded-xl p-6 bg-white text-center">
-        <p className="text-sm text-gray-500 mb-3">
-          You need to verify your ID before requesting a booking.
-        </p>
-        <Link
-          href="/verify"
-          className="inline-block rounded-full bg-rose-600 text-white px-5 py-2 text-sm font-medium hover:bg-rose-700"
-        >
-          Verify your ID
-        </Link>
-      </div>
-    );
-  }
-
   const overlapping = rangeStart && rangeEnd ? bookingsOverlappingRange(startOfDay(rangeStart), endOfDay(rangeEnd)) : [];
 
   return (
     <div className="border rounded-xl p-6 bg-white sticky top-20">
-      <p className="text-lg font-semibold mb-4">
+      <p className="text-lg font-semibold mb-1">
         ${pricePerHour.toFixed(0)} <span className="font-normal text-gray-500 text-sm">/ hour</span>
+        {pricePerDay != null && (
+          <>
+            {" "}
+            <span className="text-gray-300">·</span>{" "}
+            ${pricePerDay.toFixed(0)} <span className="font-normal text-gray-500 text-sm">/ day</span>
+          </>
+        )}
       </p>
+      {isLoggedIn && !isIdVerified && (
+        <p className="text-xs text-gray-400 mb-3">
+          <Link href="/verify" className="text-rose-600 hover:underline">
+            Verify your ID
+          </Link>{" "}
+          (optional) to show hosts you&apos;re a trusted renter.
+        </p>
+      )}
+
+      {pricePerDay != null && (
+        <div className="flex rounded-lg border p-0.5 mb-3 text-sm">
+          <button
+            type="button"
+            onClick={() => switchMode("HOURLY")}
+            className={`flex-1 rounded-md py-1.5 ${mode === "HOURLY" ? "bg-rose-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+          >
+            By the hour
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode("DAILY")}
+            className={`flex-1 rounded-md py-1.5 ${mode === "DAILY" ? "bg-rose-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+          >
+            By the day
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-3">
         <button
@@ -403,7 +526,11 @@ export default function BookingCalendar({
         >
           ‹
         </button>
-        <p className="text-xs text-gray-400">Click a date, then click a later date to book multiple days</p>
+        <p className="text-xs text-gray-400">
+          {mode === "DAILY"
+            ? "Click a day, then a later day to book multiple full days"
+            : "Click a day, then a later day for a multi-day range"}
+        </p>
         <button
           type="button"
           onClick={() => setMonthCursor((m) => addMonths(m, 1))}
@@ -442,32 +569,26 @@ export default function BookingCalendar({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                {isMultiDay ? "Check-in time" : "Start"}
-              </label>
-              <input
-                type="time"
+          {mode === "HOURLY" ? (
+            <div className="grid grid-cols-2 gap-2">
+              <TimeSelect
+                label={isMultiDay ? "Check-in time" : "Start"}
                 value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
+                onChange={setStartTime}
               />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">
-                {isMultiDay ? "Check-out time" : "End"}
-              </label>
-              <input
-                type="time"
+              <TimeSelect
+                label={isMultiDay ? "Check-out time" : "End"}
                 value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="w-full border rounded-lg px-2 py-1.5 text-sm"
+                onChange={setEndTime}
               />
             </div>
-          </div>
+          ) : (
+            <p className="text-sm text-gray-600">
+              {numDays} full day{numDays !== 1 ? "s" : ""} selected
+            </p>
+          )}
 
-          {hours > 0 && (
+          {mode === "HOURLY" && hours > 0 && (
             <div className="text-sm text-gray-600 space-y-1">
               <div className="flex justify-between">
                 <span>
@@ -481,7 +602,26 @@ export default function BookingCalendar({
                 <span>${total.toFixed(2)}</span>
               </div>
               <p className="text-xs text-gray-400">
-                No payment happens here — this is just a time request. You and the host arrange the
+                No payment happens here, this is just a time request. You and the host arrange the
+                deposit and payment directly once approved.
+              </p>
+            </div>
+          )}
+
+          {mode === "DAILY" && numDays > 0 && (
+            <div className="text-sm text-gray-600 space-y-1">
+              <div className="flex justify-between">
+                <span>
+                  ${pricePerDay?.toFixed(0)} × {numDays} day{numDays !== 1 ? "s" : ""}
+                </span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-semibold text-gray-900 pt-1 border-t">
+                <span>Estimated total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-gray-400">
+                No payment happens here, this is just a time request. You and the host arrange the
                 deposit and payment directly once approved.
               </p>
             </div>
@@ -496,10 +636,14 @@ export default function BookingCalendar({
 
           <button
             onClick={handleBook}
-            disabled={loading || hours <= 0}
+            disabled={loading || (isLoggedIn && (mode === "HOURLY" ? hours <= 0 : numDays <= 0))}
             className="w-full bg-rose-600 text-white rounded-lg py-2.5 font-medium hover:bg-rose-700 disabled:opacity-50"
           >
-            {loading ? "Requesting..." : "Request this time"}
+            {!isLoggedIn
+              ? "Log in to request this time"
+              : loading
+              ? "Requesting..."
+              : "Request this time"}
           </button>
         </div>
       )}
@@ -537,6 +681,8 @@ function HostBookingCard({
 
   const h = (booking.end.getTime() - booking.start.getTime()) / (1000 * 60 * 60);
   const spansDays = !isSameDay(booking.start, booking.end);
+  const isDaily = booking.bookingType === "DAILY";
+  const days = Math.round(h / 24);
 
   return (
     <div className="border rounded-lg p-3 space-y-2">
@@ -544,11 +690,19 @@ function HostBookingCard({
         <div>
           <p className="text-sm font-medium">{booking.renterName}</p>
           <p className="text-xs text-gray-500">
-            {spansDays ? formatDateTime(booking.start) : booking.start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+            {isDaily
+              ? booking.start.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+              : spansDays
+              ? formatDateTime(booking.start)
+              : booking.start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             {" – "}
-            {spansDays ? formatDateTime(booking.end) : booking.end.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+            {isDaily
+              ? new Date(booking.end.getTime() - 1).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+              : spansDays
+              ? formatDateTime(booking.end)
+              : booking.end.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
             {" · "}
-            {h} hour{h !== 1 ? "s" : ""}
+            {isDaily ? `${days} day${days !== 1 ? "s" : ""}` : `${h} hour${h !== 1 ? "s" : ""}`}
             {" · ~$"}
             {booking.totalPrice.toFixed(2)} est.
           </p>

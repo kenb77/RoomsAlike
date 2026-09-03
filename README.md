@@ -1,10 +1,11 @@
-# RoomsAlike — hourly space rental marketplace
+# RoomsAlike: hourly space rental marketplace
 
 Hosts post a space (up to 4 photos) and pay a monthly subscription to keep it listed. Renters
 browse by location/distance/price, request specific hours on a specific date, and the host
-approves or declines. No money moves through the platform for bookings — once approved, the
-renter and host arrange the deposit and payment directly with each other. Both sides must
-verify their identity (Stripe Identity) before they can post a listing or request a booking.
+approves or declines. No money moves through the platform for bookings. Once approved, the
+renter and host arrange the deposit and payment directly with each other. Either side can
+optionally verify their identity (Stripe Identity) as a trust signal, but it isn't required to
+post a listing or request a booking.
 
 ## Stack
 
