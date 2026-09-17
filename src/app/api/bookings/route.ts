@@ -66,14 +66,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-  } else {
-    // A daily booking must be in whole-day (24h) increments.
-    if (Math.abs(durationHours - Math.round(durationHours / 24) * 24) > 0.01) {
-      return NextResponse.json(
-        { error: "A daily booking must be in full-day increments." },
-        { status: 400 }
-      );
-    }
   }
 
   const listing = await prisma.listing.findUnique({
@@ -84,8 +76,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Listing not available" }, { status: 404 });
   }
 
-  if (bookingType === "DAILY" && listing.pricePerDay == null) {
-    return NextResponse.json({ error: "This listing doesn't offer daily rates" }, { status: 400 });
+  // A daily booking is priced per calendar day (the host's check-in/check-out
+  // hours define the window on each day), not a strict 24h multiple — a
+  // single day might only be 8 hours if check-in is 9am and check-out 6pm.
+  let numDays = 0;
+  if (bookingType === "DAILY") {
+    if (listing.pricePerDay == null) {
+      return NextResponse.json({ error: "This listing doesn't offer daily rates" }, { status: 400 });
+    }
+    const startDay = Date.UTC(startTime.getUTCFullYear(), startTime.getUTCMonth(), startTime.getUTCDate());
+    const endDay = Date.UTC(endTime.getUTCFullYear(), endTime.getUTCMonth(), endTime.getUTCDate());
+    numDays = Math.round((endDay - startDay) / (1000 * 60 * 60 * 24)) + 1;
+    if (numDays < 1) {
+      return NextResponse.json({ error: "Pick at least one day" }, { status: 400 });
+    }
   }
 
   // Check for overlapping pending/approved requests on this listing.
@@ -104,7 +108,7 @@ export async function POST(req: Request) {
 
   const totalPrice =
     bookingType === "DAILY"
-      ? Math.round(Math.round(durationHours / 24) * listing.pricePerDay! * 100) / 100
+      ? Math.round(numDays * listing.pricePerDay! * 100) / 100
       : priceForHours(durationHours, listing.pricePerHour, listing.discountThresholdHours, listing.discountPercent);
 
   const booking = await prisma.booking.create({

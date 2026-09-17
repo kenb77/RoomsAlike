@@ -130,6 +130,13 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
           </div>
         )}
 
+        {listing.houseRules && (
+          <div className="mb-6 border-t pt-6">
+            <h2 className="text-lg font-semibold mb-3">House rules</h2>
+            <p className="text-sm text-gray-700 whitespace-pre-line">{listing.houseRules}</p>
+          </div>
+        )}
+
         {!isOwner && session && (
           <MessageHostButton listingId={listing.id} />
         )}
@@ -171,6 +178,8 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
           listingId={listing.id}
           pricePerHour={listing.pricePerHour}
           pricePerDay={listing.pricePerDay}
+          dayCheckInTime={listing.dayCheckInTime}
+          dayCheckOutTime={listing.dayCheckOutTime}
           discountThresholdHours={listing.discountThresholdHours}
           discountPercent={listing.discountPercent}
           bookedRanges={listing.bookings.map((b) => ({

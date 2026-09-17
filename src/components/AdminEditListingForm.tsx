@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AMENITY_OPTIONS } from "@/lib/amenities";
 import PhotoUploadField from "@/components/PhotoUploadField";
+import HourSelect from "@/components/HourSelect";
 
 type Props = {
   listingId: string;
@@ -15,11 +16,14 @@ type Props = {
     state: string | null;
     pricePerHour: number;
     pricePerDay: number | null;
+    dayCheckInTime: string | null;
+    dayCheckOutTime: string | null;
     maxGuests: number;
     discountThresholdHours: number | null;
     discountPercent: number | null;
     cancellationPolicy: string | null;
     refundPolicy: string | null;
+    houseRules: string | null;
     photos: string[];
     amenities: string[];
   };
@@ -38,11 +42,14 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
     state: initial.state ?? "",
     pricePerHour: String(initial.pricePerHour),
     pricePerDay: initial.pricePerDay?.toString() ?? "",
+    dayCheckInTime: initial.dayCheckInTime ?? "09:00",
+    dayCheckOutTime: initial.dayCheckOutTime ?? "18:00",
     maxGuests: String(initial.maxGuests),
     discountThresholdHours: initial.discountThresholdHours?.toString() ?? "",
     discountPercent: initial.discountPercent?.toString() ?? "",
     cancellationPolicy: initial.cancellationPolicy ?? "",
     refundPolicy: initial.refundPolicy ?? "",
+    houseRules: initial.houseRules ?? "",
   });
   const [photos, setPhotos] = useState<string[]>(
     initial.photos.length ? initial.photos : [""]
@@ -78,6 +85,13 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const hasDayRate = Boolean(form.pricePerDay);
+    if (hasDayRate && form.dayCheckOutTime <= form.dayCheckInTime) {
+      setError("Day check-out time must be after check-in time");
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch(`/api/admin/listings/${listingId}`, {
@@ -90,7 +104,9 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
         city: form.city,
         state: form.state.trim() || null,
         pricePerHour: Number(form.pricePerHour),
-        pricePerDay: form.pricePerDay ? Number(form.pricePerDay) : null,
+        pricePerDay: hasDayRate ? Number(form.pricePerDay) : null,
+        dayCheckInTime: hasDayRate ? form.dayCheckInTime : null,
+        dayCheckOutTime: hasDayRate ? form.dayCheckOutTime : null,
         maxGuests: Number(form.maxGuests),
         discountThresholdHours: form.discountThresholdHours
           ? Number(form.discountThresholdHours)
@@ -100,6 +116,7 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
         amenities,
         cancellationPolicy: form.cancellationPolicy.trim() || null,
         refundPolicy: form.refundPolicy.trim() || null,
+        houseRules: form.houseRules.trim() || null,
       }),
     });
 
@@ -189,6 +206,22 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
           />
         </div>
       </div>
+
+      {form.pricePerDay && (
+        <div className="grid grid-cols-2 gap-4 -mt-2">
+          <HourSelect
+            label="Day check-in time"
+            value={form.dayCheckInTime}
+            onChange={(v) => update("dayCheckInTime", v)}
+          />
+          <HourSelect
+            label="Day check-out time"
+            value={form.dayCheckOutTime}
+            onChange={(v) => update("dayCheckOutTime", v)}
+          />
+        </div>
+      )}
+
       <div>
         <label className="block text-sm mb-1">Max people</label>
         <input
@@ -261,6 +294,16 @@ export default function AdminEditListingForm({ listingId, initial }: Props) {
           className="w-full border rounded-lg px-3 py-2 text-sm"
           value={form.refundPolicy}
           onChange={(e) => update("refundPolicy", e.target.value)}
+        />
+      </div>
+
+      <div className="border-t pt-4">
+        <p className="text-sm font-medium mb-1">House rules</p>
+        <textarea
+          rows={3}
+          className="w-full border rounded-lg px-3 py-2 text-sm"
+          value={form.houseRules}
+          onChange={(e) => update("houseRules", e.target.value)}
         />
       </div>
 

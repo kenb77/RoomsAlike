@@ -114,6 +114,7 @@ export async function PATCH(
     }
 
     const newDurationHours = (newEnd.getTime() - newStart.getTime()) / (1000 * 60 * 60);
+    let newNumDays = 0;
 
     if (booking.bookingType === "HOURLY") {
       const sameCalendarDay = newStart.toISOString().slice(0, 10) === newEnd.toISOString().slice(0, 10);
@@ -123,11 +124,13 @@ export async function PATCH(
           { status: 400 }
         );
       }
-    } else if (Math.abs(newDurationHours - Math.round(newDurationHours / 24) * 24) > 0.01) {
-      return NextResponse.json(
-        { error: "A daily booking must be in full-day increments." },
-        { status: 400 }
-      );
+    } else {
+      const startDay = Date.UTC(newStart.getUTCFullYear(), newStart.getUTCMonth(), newStart.getUTCDate());
+      const endDay = Date.UTC(newEnd.getUTCFullYear(), newEnd.getUTCMonth(), newEnd.getUTCDate());
+      newNumDays = Math.round((endDay - startDay) / (1000 * 60 * 60 * 24)) + 1;
+      if (newNumDays < 1) {
+        return NextResponse.json({ error: "Pick at least one day" }, { status: 400 });
+      }
     }
 
     const overlap = await prisma.booking.findFirst({
@@ -145,7 +148,7 @@ export async function PATCH(
 
     const totalPrice =
       booking.bookingType === "DAILY"
-        ? Math.round(Math.round(newDurationHours / 24) * (booking.listing.pricePerDay ?? 0) * 100) / 100
+        ? Math.round(newNumDays * (booking.listing.pricePerDay ?? 0) * 100) / 100
         : priceForHours(
             newDurationHours,
             booking.listing.pricePerHour,

@@ -4,22 +4,36 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { geocode } from "@/lib/geocode";
 
-const createSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(10),
-  address: z.string().min(3),
-  city: z.string().min(2),
-  state: z.string().max(50).nullable().optional(),
-  pricePerHour: z.number().positive(),
-  pricePerDay: z.number().positive().nullable().optional(),
-  discountThresholdHours: z.number().int().positive().nullable().optional(),
-  discountPercent: z.number().min(0).max(100).nullable().optional(),
-  maxGuests: z.number().int().positive().default(2),
-  photos: z.array(z.string()).max(4).default([]),
-  amenities: z.array(z.string()).default([]),
-  cancellationPolicy: z.string().max(2000).nullable().optional(),
-  refundPolicy: z.string().max(2000).nullable().optional(),
-});
+const timeRegex = /^([01]\d|2[0-3]):00$/;
+
+const createSchema = z
+  .object({
+    title: z.string().min(3),
+    description: z.string().min(10),
+    address: z.string().min(3),
+    city: z.string().min(2),
+    state: z.string().max(50).nullable().optional(),
+    pricePerHour: z.number().positive(),
+    pricePerDay: z.number().positive().nullable().optional(),
+    dayCheckInTime: z.string().regex(timeRegex).nullable().optional(),
+    dayCheckOutTime: z.string().regex(timeRegex).nullable().optional(),
+    discountThresholdHours: z.number().int().positive().nullable().optional(),
+    discountPercent: z.number().min(0).max(100).nullable().optional(),
+    maxGuests: z.number().int().positive().default(2),
+    photos: z.array(z.string()).max(4).default([]),
+    amenities: z.array(z.string()).default([]),
+    cancellationPolicy: z.string().max(2000).nullable().optional(),
+    refundPolicy: z.string().max(2000).nullable().optional(),
+    houseRules: z.string().max(2000).nullable().optional(),
+  })
+  .refine(
+    (data) => !data.pricePerDay || (data.dayCheckInTime && data.dayCheckOutTime),
+    { message: "Day check-in and check-out times are required when a daily rate is set", path: ["dayCheckInTime"] }
+  )
+  .refine(
+    (data) => !data.pricePerDay || !data.dayCheckInTime || !data.dayCheckOutTime || data.dayCheckOutTime > data.dayCheckInTime,
+    { message: "Day check-out time must be after check-in time", path: ["dayCheckOutTime"] }
+  );
 
 // GET /api/listings -> public list of ACTIVE listings (optionally filtered by city / price)
 export async function GET(req: Request) {

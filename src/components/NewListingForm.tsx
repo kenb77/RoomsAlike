@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AMENITY_OPTIONS } from "@/lib/amenities";
 import PhotoUploadField from "@/components/PhotoUploadField";
+import HourSelect from "@/components/HourSelect";
 
 export default function NewListingForm() {
   const router = useRouter();
@@ -15,11 +16,14 @@ export default function NewListingForm() {
     state: "",
     pricePerHour: "",
     pricePerDay: "",
+    dayCheckInTime: "09:00",
+    dayCheckOutTime: "18:00",
     maxGuests: "2",
     discountThresholdHours: "",
     discountPercent: "",
     cancellationPolicy: "",
     refundPolicy: "",
+    houseRules: "",
   });
   const [photos, setPhotos] = useState<string[]>([""]);
   const [amenities, setAmenities] = useState<string[]>([]);
@@ -49,6 +53,13 @@ export default function NewListingForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    const hasDayRate = Boolean(form.pricePerDay);
+    if (hasDayRate && form.dayCheckOutTime <= form.dayCheckInTime) {
+      setError("Day check-out time must be after check-in time");
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch("/api/listings", {
@@ -61,7 +72,9 @@ export default function NewListingForm() {
         city: form.city,
         state: form.state.trim() || null,
         pricePerHour: Number(form.pricePerHour),
-        pricePerDay: form.pricePerDay ? Number(form.pricePerDay) : null,
+        pricePerDay: hasDayRate ? Number(form.pricePerDay) : null,
+        dayCheckInTime: hasDayRate ? form.dayCheckInTime : null,
+        dayCheckOutTime: hasDayRate ? form.dayCheckOutTime : null,
         maxGuests: Number(form.maxGuests),
         discountThresholdHours: form.discountThresholdHours
           ? Number(form.discountThresholdHours)
@@ -71,6 +84,7 @@ export default function NewListingForm() {
         amenities,
         cancellationPolicy: form.cancellationPolicy.trim() || null,
         refundPolicy: form.refundPolicy.trim() || null,
+        houseRules: form.houseRules.trim() || null,
       }),
     });
 
@@ -160,6 +174,22 @@ export default function NewListingForm() {
           />
         </div>
       </div>
+
+      {form.pricePerDay && (
+        <div className="grid grid-cols-2 gap-4 -mt-2">
+          <HourSelect
+            label="Day check-in time"
+            value={form.dayCheckInTime}
+            onChange={(v) => update("dayCheckInTime", v)}
+          />
+          <HourSelect
+            label="Day check-out time"
+            value={form.dayCheckOutTime}
+            onChange={(v) => update("dayCheckOutTime", v)}
+          />
+        </div>
+      )}
+
       <div>
         <label className="block text-sm mb-1">Max people</label>
         <input
@@ -240,6 +270,17 @@ export default function NewListingForm() {
           className="w-full border rounded-lg px-3 py-2 text-sm"
           value={form.refundPolicy}
           onChange={(e) => update("refundPolicy", e.target.value)}
+        />
+      </div>
+
+      <div className="border-t pt-4">
+        <p className="text-sm font-medium mb-1">House rules (optional)</p>
+        <textarea
+          rows={3}
+          placeholder="e.g. No smoking, quiet hours after 10pm, remove shoes indoors."
+          className="w-full border rounded-lg px-3 py-2 text-sm"
+          value={form.houseRules}
+          onChange={(e) => update("houseRules", e.target.value)}
         />
       </div>
 

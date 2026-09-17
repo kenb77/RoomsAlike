@@ -196,6 +196,8 @@ export default async function HostDashboardPage() {
                       listingId={listing.id}
                       pricePerHour={listing.pricePerHour}
                       pricePerDay={listing.pricePerDay}
+                      dayCheckInTime={listing.dayCheckInTime}
+                      dayCheckOutTime={listing.dayCheckOutTime}
                       discountThresholdHours={listing.discountThresholdHours}
                       discountPercent={listing.discountPercent}
                       bookedRanges={[]}

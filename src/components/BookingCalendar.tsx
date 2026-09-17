@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BookingActions from "@/components/BookingActions";
 import EditBookingForm from "@/components/EditBookingForm";
+import HourSelect, { formatHour24 } from "@/components/HourSelect";
 
 type BookedRange = { startTime: string; endTime: string };
 
@@ -23,6 +24,8 @@ type Props = {
   listingId: string;
   pricePerHour: number;
   pricePerDay: number | null;
+  dayCheckInTime: string | null;
+  dayCheckOutTime: string | null;
   discountThresholdHours: number | null;
   discountPercent: number | null;
   bookedRanges: BookedRange[];
@@ -61,14 +64,15 @@ function addMonths(d: Date, n: number) {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
-function addDays(d: Date, n: number) {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
 function daysBetweenInclusive(a: Date, b: Date) {
   return Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+function applyTime(d: Date, hhmm: string) {
+  const [h, m] = hhmm.split(":").map(Number);
+  const r = new Date(d);
+  r.setHours(h || 0, m || 0, 0, 0);
+  return r;
 }
 
 function priceForHours(
@@ -89,69 +93,12 @@ function formatDateTime(d: Date) {
     ", " + d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 }
 
-const HOURS_12 = Array.from({ length: 12 }, (_, i) => i + 1);
-
-// Bookings are on-the-hour only, no minutes.
-function to24(hour12: number, ampm: "AM" | "PM") {
-  let h = hour12 % 12;
-  if (ampm === "PM") h += 12;
-  return `${String(h).padStart(2, "0")}:00`;
-}
-
-function from24(value: string) {
-  const h = parseInt(value.split(":")[0], 10) || 0;
-  const ampm: "AM" | "PM" = h >= 12 ? "PM" : "AM";
-  let hour12 = h % 12;
-  if (hour12 === 0) hour12 = 12;
-  return { hour12, ampm };
-}
-
-// Plain <select> dropdowns instead of a native <input type="time"> — the
-// native time picker is unreliable to interact with on a lot of phones and
-// browsers, dropdowns work the same everywhere. Hour + AM/PM only, no
-// minutes, since bookings are always on the hour.
-function TimeSelect({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  const { hour12, ampm } = from24(value);
-  return (
-    <div>
-      <label className="block text-xs text-gray-500 mb-1">{label}</label>
-      <div className="flex gap-1.5">
-        <select
-          value={hour12}
-          onChange={(e) => onChange(to24(Number(e.target.value), ampm))}
-          className="flex-1 min-w-0 border rounded-lg px-2 py-1.5 text-sm"
-        >
-          {HOURS_12.map((h) => (
-            <option key={h} value={h}>
-              {h}:00
-            </option>
-          ))}
-        </select>
-        <select
-          value={ampm}
-          onChange={(e) => onChange(to24(hour12, e.target.value as "AM" | "PM"))}
-          className="flex-1 min-w-0 border rounded-lg px-2 py-1.5 text-sm"
-        >
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
-      </div>
-    </div>
-  );
-}
-
 export default function BookingCalendar({
   listingId,
   pricePerHour,
   pricePerDay,
+  dayCheckInTime,
+  dayCheckOutTime,
   discountThresholdHours,
   discountPercent,
   bookedRanges,
@@ -279,22 +226,22 @@ export default function BookingCalendar({
 
   const startDateTime = useMemo(() => {
     if (!rangeStart) return null;
-    if (mode === "DAILY") return startOfDay(rangeStart);
+    if (mode === "DAILY") return applyTime(rangeStart, dayCheckInTime ?? "00:00");
     const [h, m] = startTime.split(":").map(Number);
     const d = new Date(rangeStart);
     d.setHours(h, m, 0, 0);
     return d;
-  }, [rangeStart, startTime, mode]);
+  }, [rangeStart, startTime, mode, dayCheckInTime]);
 
   const endDateTime = useMemo(() => {
     const end = rangeEnd ?? rangeStart;
     if (!end) return null;
-    if (mode === "DAILY") return startOfDay(addDays(end, 1));
+    if (mode === "DAILY") return applyTime(end, dayCheckOutTime ?? "23:59");
     const [h, m] = endTime.split(":").map(Number);
     const d = new Date(end);
     d.setHours(h, m, 0, 0);
     return d;
-  }, [rangeStart, rangeEnd, endTime, mode]);
+  }, [rangeStart, rangeEnd, endTime, mode, dayCheckOutTime]);
 
   const hours =
     mode === "HOURLY" && startDateTime && endDateTime && endDateTime > startDateTime
@@ -571,12 +518,12 @@ export default function BookingCalendar({
 
           {mode === "HOURLY" ? (
             <div className="grid grid-cols-2 gap-2">
-              <TimeSelect
+              <HourSelect
                 label={isMultiDay ? "Check-in time" : "Start"}
                 value={startTime}
                 onChange={setStartTime}
               />
-              <TimeSelect
+              <HourSelect
                 label={isMultiDay ? "Check-out time" : "End"}
                 value={endTime}
                 onChange={setEndTime}
@@ -585,6 +532,12 @@ export default function BookingCalendar({
           ) : (
             <p className="text-sm text-gray-600">
               {numDays} full day{numDays !== 1 ? "s" : ""} selected
+              {dayCheckInTime && dayCheckOutTime && (
+                <>
+                  {" "}
+                  &middot; {formatHour24(dayCheckInTime)} check-in, {formatHour24(dayCheckOutTime)} check-out
+                </>
+              )}
             </p>
           )}
 

@@ -93,12 +93,18 @@ model Listing {
   // Optional flat rate for a full calendar day (or multiple full days).
   // When set, renters can choose to book by the day instead of by the hour.
   pricePerDay            Float?
+  // The daily window a day-rate booking covers, e.g. "09:00" to "18:00".
+  // Required (enforced in the API) whenever pricePerDay is set.
+  dayCheckInTime         String?
+  dayCheckOutTime        String?
   discountThresholdHours Int?
   discountPercent        Float?
   photos                 String[]      @default([])
   amenities              String[]      @default([])
   cancellationPolicy     String?
   refundPolicy           String?
+  // Free-text house rules set by the host (e.g. no smoking, quiet hours).
+  houseRules             String?
   maxGuests              Int           @default(2)
   status                 ListingStatus @default(DRAFT)
   // Set once an admin approves the listing's content/photos. Cleared if the

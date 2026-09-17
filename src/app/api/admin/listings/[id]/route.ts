@@ -4,26 +4,40 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendEmail, listingReviewedEmail } from "@/lib/email";
 
+const timeRegex = /^([01]\d|2[0-3]):00$/;
+
 // Admin-only: approve/reject a pending listing, and/or directly edit any of
 // its fields (used by the admin dashboard's "edit listing" screen).
-const patchSchema = z.object({
-  action: z.enum(["approve", "reject"]).optional(),
-  rejectionReason: z.string().max(1000).nullable().optional(),
-  title: z.string().min(3).optional(),
-  description: z.string().min(10).optional(),
-  address: z.string().min(3).optional(),
-  city: z.string().min(2).optional(),
-  state: z.string().max(50).nullable().optional(),
-  pricePerHour: z.number().positive().optional(),
-  pricePerDay: z.number().positive().nullable().optional(),
-  discountThresholdHours: z.number().int().positive().nullable().optional(),
-  discountPercent: z.number().min(0).max(100).nullable().optional(),
-  maxGuests: z.number().int().positive().optional(),
-  photos: z.array(z.string()).max(4).optional(),
-  amenities: z.array(z.string()).optional(),
-  cancellationPolicy: z.string().max(2000).nullable().optional(),
-  refundPolicy: z.string().max(2000).nullable().optional(),
-});
+const patchSchema = z
+  .object({
+    action: z.enum(["approve", "reject"]).optional(),
+    rejectionReason: z.string().max(1000).nullable().optional(),
+    title: z.string().min(3).optional(),
+    description: z.string().min(10).optional(),
+    address: z.string().min(3).optional(),
+    city: z.string().min(2).optional(),
+    state: z.string().max(50).nullable().optional(),
+    pricePerHour: z.number().positive().optional(),
+    pricePerDay: z.number().positive().nullable().optional(),
+    dayCheckInTime: z.string().regex(timeRegex).nullable().optional(),
+    dayCheckOutTime: z.string().regex(timeRegex).nullable().optional(),
+    discountThresholdHours: z.number().int().positive().nullable().optional(),
+    discountPercent: z.number().min(0).max(100).nullable().optional(),
+    maxGuests: z.number().int().positive().optional(),
+    photos: z.array(z.string()).max(4).optional(),
+    amenities: z.array(z.string()).optional(),
+    cancellationPolicy: z.string().max(2000).nullable().optional(),
+    refundPolicy: z.string().max(2000).nullable().optional(),
+    houseRules: z.string().max(2000).nullable().optional(),
+  })
+  .refine(
+    (data) => !data.pricePerDay || (data.dayCheckInTime && data.dayCheckOutTime),
+    { message: "Day check-in and check-out times are required when a daily rate is set", path: ["dayCheckInTime"] }
+  )
+  .refine(
+    (data) => !data.pricePerDay || !data.dayCheckInTime || !data.dayCheckOutTime || data.dayCheckOutTime > data.dayCheckInTime,
+    { message: "Day check-out time must be after check-in time", path: ["dayCheckOutTime"] }
+  );
 
 export async function PATCH(
   req: Request,
