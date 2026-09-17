@@ -58,7 +58,7 @@ export default async function AdminConversationsPage() {
                 <td className="px-4 py-2">
                   <Link
                     href={`/admin/conversations/${c.id}`}
-                    className="text-rose-600 hover:underline"
+                    className="text-royal-600 hover:underline"
                   >
                     View
                   </Link>

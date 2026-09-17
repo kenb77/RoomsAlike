@@ -57,7 +57,7 @@ export default async function HostDashboardPage() {
         <h1 className="text-2xl font-semibold">Your listings</h1>
         <Link
           href="/host/listings/new"
-          className="rounded-full bg-rose-600 text-white px-4 py-2 font-medium hover:bg-rose-700"
+          className="rounded-full bg-royal-600 text-white px-4 py-2 font-medium hover:bg-royal-700"
         >
           + New listing
         </Link>
@@ -117,7 +117,7 @@ export default async function HostDashboardPage() {
                   {(listing.status === "PENDING_PAYMENT" || listing.status === "INACTIVE") && (
                     <Link
                       href={`/host/listings/${listing.id}/pay`}
-                      className="text-sm rounded-full bg-rose-600 text-white px-3 py-1.5 hover:bg-rose-700"
+                      className="text-sm rounded-full bg-royal-600 text-white px-3 py-1.5 hover:bg-royal-700"
                     >
                       {listing.subscription ? "Resubscribe" : "Pay to activate"}
                     </Link>

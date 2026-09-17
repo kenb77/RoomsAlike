@@ -300,7 +300,7 @@ export default function NewListingForm() {
           <button
             type="button"
             onClick={addPhotoField}
-            className="mt-2 text-sm text-rose-600 hover:underline"
+            className="mt-2 text-sm text-royal-600 hover:underline"
           >
             + Add another photo
           </button>
@@ -311,7 +311,7 @@ export default function NewListingForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-rose-600 text-white rounded-lg py-2.5 font-medium hover:bg-rose-700 disabled:opacity-50"
+        className="w-full bg-royal-600 text-white rounded-lg py-2.5 font-medium hover:bg-royal-700 disabled:opacity-50"
       >
         {loading ? "Creating..." : "Continue to subscription"}
       </button>

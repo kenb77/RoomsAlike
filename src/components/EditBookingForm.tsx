@@ -75,7 +75,7 @@ export default function EditBookingForm({
           type="button"
           onClick={save}
           disabled={saving}
-          className="text-xs rounded-lg bg-rose-600 text-white px-3 py-1.5 hover:bg-rose-700 disabled:opacity-50"
+          className="text-xs rounded-lg bg-royal-600 text-white px-3 py-1.5 hover:bg-royal-700 disabled:opacity-50"
         >
           {saving ? "Saving..." : "Save changes"}
         </button>

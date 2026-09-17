@@ -77,7 +77,7 @@ export default async function AdminPage() {
     <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold">Admin</h1>
-        <Link href="/admin/conversations" className="text-sm text-rose-600 hover:underline">
+        <Link href="/admin/conversations" className="text-sm text-royal-600 hover:underline">
           View all conversations →
         </Link>
       </div>
@@ -258,7 +258,7 @@ export default async function AdminPage() {
                 <td className="px-4 py-2">
                   <Link
                     href={`/admin/listings/${l.id}/edit`}
-                    className="text-rose-600 hover:underline"
+                    className="text-royal-600 hover:underline"
                   >
                     Edit
                   </Link>

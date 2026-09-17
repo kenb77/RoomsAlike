@@ -74,7 +74,7 @@ export default function HostReviewButton({ bookingId }: { bookingId: string }) {
           <button
             type="submit"
             disabled={loading}
-            className="text-xs rounded-full bg-rose-600 text-white px-3 py-1.5 hover:bg-rose-700 disabled:opacity-50"
+            className="text-xs rounded-full bg-royal-600 text-white px-3 py-1.5 hover:bg-royal-700 disabled:opacity-50"
           >
             {loading ? "Submitting..." : "Submit review"}
           </button>

@@ -90,9 +90,12 @@ export default async function HomePage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-semibold text-gray-900 text-center mb-6">
+      <h1 className="text-2xl font-semibold text-gray-900 text-center mb-2">
         Find a space to book
       </h1>
+      <p className="text-sm text-gray-500 text-center max-w-xl mx-auto mb-6">
+        Real rooms and spaces from real hosts nearby, by the hour or by the day.
+      </p>
 
       <form
         action="/"
@@ -126,7 +129,7 @@ export default async function HomePage({
         <div className="p-2 flex items-center justify-center">
           <button
             aria-label="Search"
-            className="rounded-full bg-rose-600 text-white p-3 hover:bg-rose-700 flex items-center justify-center"
+            className="rounded-full bg-royal-600 text-white p-3 hover:bg-royal-700 flex items-center justify-center"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

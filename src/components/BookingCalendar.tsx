@@ -315,9 +315,9 @@ export default function BookingCalendar({
                 className={[
                   "aspect-square text-xs flex items-center justify-center relative",
                   isRangeEdge ? "rounded-full" : isSelected ? "rounded-none" : "rounded-full",
-                  disabled ? "text-gray-300 line-through cursor-not-allowed" : "hover:bg-rose-50 cursor-pointer",
-                  isSelected && !isRangeEdge ? "bg-rose-100 text-rose-900 hover:bg-rose-100" : "",
-                  isRangeEdge ? "bg-rose-600 text-white hover:bg-rose-600" : "",
+                  disabled ? "text-gray-300 line-through cursor-not-allowed" : "hover:bg-royal-50 cursor-pointer",
+                  isSelected && !isRangeEdge ? "bg-royal-100 text-royal-900 hover:bg-royal-100" : "",
+                  isRangeEdge ? "bg-royal-600 text-white hover:bg-royal-600" : "",
                 ].join(" ")}
               >
                 {day.getDate()}
@@ -439,7 +439,7 @@ export default function BookingCalendar({
       </p>
       {isLoggedIn && !isIdVerified && (
         <p className="text-xs text-gray-400 mb-3">
-          <Link href="/verify" className="text-rose-600 hover:underline">
+          <Link href="/verify" className="text-royal-600 hover:underline">
             Verify your ID
           </Link>{" "}
           (optional) to show hosts you&apos;re a trusted renter.
@@ -451,14 +451,14 @@ export default function BookingCalendar({
           <button
             type="button"
             onClick={() => switchMode("HOURLY")}
-            className={`flex-1 rounded-md py-1.5 ${mode === "HOURLY" ? "bg-rose-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+            className={`flex-1 rounded-md py-1.5 ${mode === "HOURLY" ? "bg-royal-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
           >
             By the hour
           </button>
           <button
             type="button"
             onClick={() => switchMode("DAILY")}
-            className={`flex-1 rounded-md py-1.5 ${mode === "DAILY" ? "bg-rose-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
+            className={`flex-1 rounded-md py-1.5 ${mode === "DAILY" ? "bg-royal-600 text-white" : "text-gray-600 hover:bg-gray-50"}`}
           >
             By the day
           </button>
@@ -501,7 +501,7 @@ export default function BookingCalendar({
               )}
             </p>
             {isMultiDay && (
-              <button type="button" onClick={resetToSingleDay} className="text-xs text-rose-600 hover:underline">
+              <button type="button" onClick={resetToSingleDay} className="text-xs text-royal-600 hover:underline">
                 Reset to single day
               </button>
             )}
@@ -590,7 +590,7 @@ export default function BookingCalendar({
           <button
             onClick={handleBook}
             disabled={loading || (isLoggedIn && (mode === "HOURLY" ? hours <= 0 : numDays <= 0))}
-            className="w-full bg-rose-600 text-white rounded-lg py-2.5 font-medium hover:bg-rose-700 disabled:opacity-50"
+            className="w-full bg-royal-600 text-white rounded-lg py-2.5 font-medium hover:bg-royal-700 disabled:opacity-50"
           >
             {!isLoggedIn
               ? "Log in to request this time"
@@ -679,7 +679,7 @@ function HostBookingCard({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="text-xs text-rose-600 hover:underline"
+            className="text-xs text-royal-600 hover:underline"
           >
             Edit date/time
           </button>

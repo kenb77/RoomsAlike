@@ -25,7 +25,7 @@ export default function VerifyButton({ canRetry }: { canRetry: boolean }) {
       <button
         onClick={handleClick}
         disabled={loading}
-        className="rounded-full bg-rose-600 text-white px-6 py-3 font-medium hover:bg-rose-700 disabled:opacity-50"
+        className="rounded-full bg-royal-600 text-white px-6 py-3 font-medium hover:bg-royal-700 disabled:opacity-50"
       >
         {loading ? "Redirecting..." : canRetry ? "Try again" : "Start verification"}
       </button>

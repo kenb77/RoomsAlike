@@ -84,7 +84,7 @@ export default async function AccountPage() {
           Status: {user.idVerificationStatus === "VERIFIED" ? "Verified" : "Not verified (optional)"}
         </p>
         {user.idVerificationStatus !== "VERIFIED" && (
-          <Link href="/verify" className="text-sm text-rose-600 hover:underline">
+          <Link href="/verify" className="text-sm text-royal-600 hover:underline">
             Verify your ID →
           </Link>
         )}

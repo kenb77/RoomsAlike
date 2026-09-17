@@ -51,9 +51,9 @@ export default function MyBookingsCalendar({ bookings }: Props) {
     matches.forEach((b, i) => {
       const el = document.querySelector(`[data-booking-id="${b.id}"]`);
       if (!el) return;
-      el.classList.add("ring-2", "ring-rose-500");
+      el.classList.add("ring-2", "ring-royal-500");
       if (i === 0) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => el.classList.remove("ring-2", "ring-rose-500"), 2000);
+      setTimeout(() => el.classList.remove("ring-2", "ring-royal-500"), 2000);
     });
   }
 
@@ -107,8 +107,8 @@ export default function MyBookingsCalendar({ bookings }: Props) {
               onClick={() => handleClick(day)}
               className={[
                 "aspect-square text-xs rounded-full flex items-center justify-center relative",
-                dayBookings.length > 0 ? "hover:bg-rose-50 cursor-pointer" : "text-gray-300 cursor-default",
-                isSelected ? "bg-rose-600 text-white hover:bg-rose-600" : "",
+                dayBookings.length > 0 ? "hover:bg-royal-50 cursor-pointer" : "text-gray-300 cursor-default",
+                isSelected ? "bg-royal-600 text-white hover:bg-royal-600" : "",
               ].join(" ")}
             >
               {day.getDate()}

@@ -53,7 +53,7 @@ export default function PayListingPage({ params }: { params: { id: string } }) {
       <button
         onClick={handlePay}
         disabled={loading}
-        className="bg-rose-600 text-white rounded-full px-6 py-3 font-medium hover:bg-rose-700 disabled:opacity-50"
+        className="bg-royal-600 text-white rounded-full px-6 py-3 font-medium hover:bg-royal-700 disabled:opacity-50"
       >
         {loading ? "Redirecting..." : "Start monthly subscription"}
       </button>

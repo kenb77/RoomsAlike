@@ -110,7 +110,7 @@ export default function ConversationThreadPage({ params }: { params: { id: strin
             <div key={m.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm whitespace-pre-line ${
-                  isMe ? "bg-rose-600 text-white" : "bg-gray-100 text-gray-800"
+                  isMe ? "bg-royal-600 text-white" : "bg-gray-100 text-gray-800"
                 }`}
               >
                 {!isMe && <p className="text-xs font-medium mb-0.5">{m.sender.name}</p>}
@@ -168,7 +168,7 @@ export default function ConversationThreadPage({ params }: { params: { id: strin
         />
         <button
           type="submit"
-          className="rounded-full bg-rose-600 text-white px-5 py-2 font-medium hover:bg-rose-700"
+          className="rounded-full bg-royal-600 text-white px-5 py-2 font-medium hover:bg-royal-700"
         >
           Send
         </button>
