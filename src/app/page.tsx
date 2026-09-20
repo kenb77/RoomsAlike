@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import ListingCard from "@/components/ListingCard";
@@ -175,6 +176,36 @@ export default async function HomePage({
           ))}
         </div>
       )}
+
+      <div className="mt-16 border-t pt-10 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+        <div>
+          <p className="font-medium text-gray-900 mb-1">Request, don&apos;t reserve blind</p>
+          <p className="text-sm text-gray-500">
+            Every booking goes to the host first, so you&apos;re never locked into
+            a space sight unseen.
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900 mb-1">By the hour or by the day</p>
+          <p className="text-sm text-gray-500">
+            Book a few hours for a shoot or meeting, or a full day (or several)
+            when you need more time.
+          </p>
+        </div>
+        <div>
+          <p className="font-medium text-gray-900 mb-1">You settle up directly</p>
+          <p className="text-sm text-gray-500">
+            Renters and hosts arrange payment between themselves, no platform
+            cut taken from your booking.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-10 text-center">
+        <Link href="/how-it-works" className="text-sm font-medium text-royal-600 hover:text-royal-700">
+          See exactly how RoomsAlike works →
+        </Link>
+      </div>
     </div>
   );
 }

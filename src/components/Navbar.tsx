@@ -32,6 +32,9 @@ export default function Navbar() {
         <Link href="/" className="hover:text-royal-600">
           Browse
         </Link>
+        <Link href="/how-it-works" className="hover:text-royal-600">
+          How it works
+        </Link>
         {session ? (
           <>
             <Link href="/host/dashboard" className="hover:text-royal-600">
